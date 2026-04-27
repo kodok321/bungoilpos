@@ -158,7 +158,7 @@ const productController = {
 
       if (newStock < 0) return res.status(400).json({ error: 'Stok tidak boleh negatif' });
 
-      db.prepare('UPDATE products SET stock = ?, updated_at = datetime("now") WHERE id = ?').run(newStock, req.params.id);
+      db.prepare(`UPDATE products SET stock = ?, updated_at = datetime('now') WHERE id = ?`).run(newStock, req.params.id);
 
       db.prepare(`
         INSERT INTO stock_movements (id, product_id, branch_id, movement_type, quantity, reference_type, notes, user_id)
@@ -173,7 +173,7 @@ const productController = {
 
   delete(req, res) {
     try {
-      db.prepare('UPDATE products SET is_active = 0, updated_at = datetime("now") WHERE id = ?').run(req.params.id);
+      db.prepare(`UPDATE products SET is_active = 0, updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
       res.json({ message: 'Produk berhasil dihapus' });
     } catch (error) {
       res.status(500).json({ error: error.message });

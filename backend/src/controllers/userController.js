@@ -61,7 +61,7 @@ const userController = {
       if (!new_password) return res.status(400).json({ error: 'Password baru diperlukan' });
 
       const hashedPassword = bcrypt.hashSync(new_password, 10);
-      db.prepare('UPDATE users SET password = ?, updated_at = datetime("now") WHERE id = ?').run(hashedPassword, req.params.id);
+      db.prepare(`UPDATE users SET password = ?, updated_at = datetime('now') WHERE id = ?`).run(hashedPassword, req.params.id);
       res.json({ message: 'Password berhasil direset' });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -70,7 +70,7 @@ const userController = {
 
   delete(req, res) {
     try {
-      db.prepare('UPDATE users SET is_active = 0, updated_at = datetime("now") WHERE id = ?').run(req.params.id);
+      db.prepare(`UPDATE users SET is_active = 0, updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
       res.json({ message: 'User berhasil dinonaktifkan' });
     } catch (error) {
       res.status(500).json({ error: error.message });

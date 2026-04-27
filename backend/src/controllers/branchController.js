@@ -37,7 +37,7 @@ const branchController = {
       const existing = db.prepare('SELECT * FROM branches WHERE id = ?').get(req.params.id);
       if (!existing) return res.status(404).json({ error: 'Cabang tidak ditemukan' });
 
-      db.prepare('UPDATE branches SET name = ?, address = ?, phone = ?, is_active = ?, updated_at = datetime("now") WHERE id = ?').run(
+      db.prepare(`UPDATE branches SET name = ?, address = ?, phone = ?, is_active = ?, updated_at = datetime('now') WHERE id = ?`).run(
         name || existing.name, address !== undefined ? address : existing.address,
         phone !== undefined ? phone : existing.phone,
         is_active !== undefined ? is_active : existing.is_active, req.params.id
@@ -52,7 +52,7 @@ const branchController = {
 
   delete(req, res) {
     try {
-      db.prepare('UPDATE branches SET is_active = 0, updated_at = datetime("now") WHERE id = ?').run(req.params.id);
+      db.prepare(`UPDATE branches SET is_active = 0, updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
       res.json({ message: 'Cabang berhasil dinonaktifkan' });
     } catch (error) {
       res.status(500).json({ error: error.message });

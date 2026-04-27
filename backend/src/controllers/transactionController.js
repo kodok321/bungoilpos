@@ -146,7 +146,7 @@ const transactionController = {
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
 
-        const updateStock = db.prepare('UPDATE products SET stock = stock - ?, updated_at = datetime("now") WHERE id = ?');
+        const updateStock = db.prepare(`UPDATE products SET stock = stock - ?, updated_at = datetime('now') WHERE id = ?`);
         const insertMovement = db.prepare(`
           INSERT INTO stock_movements (id, product_id, branch_id, movement_type, quantity, reference_type, reference_id, user_id)
           VALUES (?, ?, ?, 'out', ?, 'transaction', ?, ?)
@@ -159,7 +159,7 @@ const transactionController = {
         }
 
         if (customer_id) {
-          db.prepare('UPDATE customers SET total_purchases = total_purchases + ?, updated_at = datetime("now") WHERE id = ?').run(totalAmount, customer_id);
+          db.prepare(`UPDATE customers SET total_purchases = total_purchases + ?, updated_at = datetime('now') WHERE id = ?`).run(totalAmount, customer_id);
         }
 
         return { id, invoice_number, totalAmount, changeAmt: changeAmt > 0 ? changeAmt : 0, paymentStatus };
@@ -201,7 +201,7 @@ const transactionController = {
         const items = db.prepare('SELECT * FROM transaction_items WHERE transaction_id = ?').all(req.params.id);
 
         for (const item of items) {
-          db.prepare('UPDATE products SET stock = stock + ?, updated_at = datetime("now") WHERE id = ?').run(item.quantity, item.product_id);
+          db.prepare(`UPDATE products SET stock = stock + ?, updated_at = datetime('now') WHERE id = ?`).run(item.quantity, item.product_id);
           db.prepare(`
             INSERT INTO stock_movements (id, product_id, movement_type, quantity, reference_type, reference_id, notes, user_id)
             VALUES (?, ?, 'in', ?, 'cancellation', ?, 'Pembatalan transaksi', ?)

@@ -154,9 +154,9 @@ const workOrderController = {
 
       const updates = { status, updated_at: "datetime('now')" };
       if (status === 'completed') {
-        db.prepare('UPDATE work_orders SET status = ?, completed_at = datetime("now"), updated_at = datetime("now") WHERE id = ?').run(status, req.params.id);
+        db.prepare(`UPDATE work_orders SET status = ?, completed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`).run(status, req.params.id);
       } else {
-        db.prepare('UPDATE work_orders SET status = ?, updated_at = datetime("now") WHERE id = ?').run(status, req.params.id);
+        db.prepare(`UPDATE work_orders SET status = ?, updated_at = datetime('now') WHERE id = ?`).run(status, req.params.id);
       }
 
       res.json({ message: 'Status work order berhasil diperbarui' });
@@ -217,7 +217,7 @@ const workOrderController = {
 
         const items = db.prepare('SELECT * FROM work_order_items WHERE work_order_id = ?').all(req.params.id);
         for (const item of items) {
-          db.prepare('UPDATE products SET stock = stock - ?, updated_at = datetime("now") WHERE id = ?').run(item.quantity, item.product_id);
+          db.prepare(`UPDATE products SET stock = stock - ?, updated_at = datetime('now') WHERE id = ?`).run(item.quantity, item.product_id);
           db.prepare(`
             INSERT INTO stock_movements (id, product_id, movement_type, quantity, reference_type, reference_id, notes, user_id)
             VALUES (?, ?, 'out', ?, 'work_order', ?, 'Pemakaian untuk work order', ?)

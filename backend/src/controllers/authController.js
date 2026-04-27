@@ -84,7 +84,7 @@ const authController = {
       }
 
       const hashedPassword = bcrypt.hashSync(new_password, 10);
-      db.prepare('UPDATE users SET password = ?, updated_at = datetime("now") WHERE id = ?').run(hashedPassword, req.user.id);
+      db.prepare(`UPDATE users SET password = ?, updated_at = datetime('now') WHERE id = ?`).run(hashedPassword, req.user.id);
 
       res.json({ message: 'Password berhasil diubah' });
     } catch (error) {
