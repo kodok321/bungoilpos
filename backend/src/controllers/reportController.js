@@ -151,12 +151,15 @@ const reportController = {
         WHERE t.payment_status != 'cancelled' ${dateFilter}
       `).get(...params);
 
+      const serviceParams = [];
+      let serviceDateFilter = '';
+      if (date_from) { serviceDateFilter += ' AND date(created_at) >= ?'; serviceParams.push(date_from); }
+      if (date_to) { serviceDateFilter += ' AND date(created_at) <= ?'; serviceParams.push(date_to); }
+
       const serviceRevenue = db.prepare(`
         SELECT COALESCE(SUM(service_fee), 0) as total
-        FROM work_orders WHERE payment_status = 'paid'
-        ${date_from ? "AND date(created_at) >= '" + date_from + "'" : ''}
-        ${date_to ? "AND date(created_at) <= '" + date_to + "'" : ''}
-      `).get();
+        FROM work_orders WHERE payment_status = 'paid' ${serviceDateFilter}
+      `).get(...serviceParams);
 
       const expenseParams = [];
       let expenseDateFilter = '';

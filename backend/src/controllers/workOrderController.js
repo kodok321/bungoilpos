@@ -217,6 +217,10 @@ const workOrderController = {
 
         const items = db.prepare('SELECT * FROM work_order_items WHERE work_order_id = ?').all(req.params.id);
         for (const item of items) {
+          const product = db.prepare('SELECT stock, name FROM products WHERE id = ?').get(item.product_id);
+          if (product && product.stock < item.quantity) {
+            throw new Error(`Stok ${product.name} tidak mencukupi (tersedia: ${product.stock}, dibutuhkan: ${item.quantity})`);
+          }
           db.prepare(`UPDATE products SET stock = stock - ?, updated_at = datetime('now') WHERE id = ?`).run(item.quantity, item.product_id);
           db.prepare(`
             INSERT INTO stock_movements (id, product_id, movement_type, quantity, reference_type, reference_id, notes, user_id)

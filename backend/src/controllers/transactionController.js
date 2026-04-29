@@ -108,7 +108,7 @@ const transactionController = {
 
           const unitPrice = transaction_type === 'wholesale' && item.quantity >= product.wholesale_min_qty
             ? product.wholesale_price
-            : (transaction_type === 'wholesale' ? product.wholesale_price : product.retail_price);
+            : product.retail_price;
 
           const itemDiscount = item.discount || 0;
           const itemSubtotal = (unitPrice * item.quantity) - itemDiscount;

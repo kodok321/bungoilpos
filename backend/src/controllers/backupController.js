@@ -5,7 +5,7 @@ const fs = require('fs');
 const backupDir = path.join(__dirname, '../../data/backups');
 
 const backupController = {
-  createBackup(req, res) {
+  async createBackup(req, res) {
     try {
       if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
@@ -16,7 +16,7 @@ const backupController = {
       const backupFileName = `backup-pos-${timestamp}.db`;
       const backupPath = path.join(backupDir, backupFileName);
 
-      db.backup(backupPath);
+      await db.backup(backupPath);
 
       const stats = fs.statSync(backupPath);
       const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
@@ -34,14 +34,14 @@ const backupController = {
     }
   },
 
-  downloadBackup(req, res) {
+  async downloadBackup(req, res) {
     try {
       if (!fs.existsSync(backupDir)) {
         fs.mkdirSync(backupDir, { recursive: true });
       }
 
       const tempBackup = path.join(backupDir, `download-backup-${Date.now()}.db`);
-      db.backup(tempBackup);
+      await db.backup(tempBackup);
 
       res.setHeader('Content-Type', 'application/octet-stream');
       res.setHeader('Content-Disposition', `attachment; filename=pos-backup-${new Date().toISOString().slice(0, 10)}.db`);
@@ -49,11 +49,11 @@ const backupController = {
       const stream = fs.createReadStream(tempBackup);
       stream.pipe(res);
       stream.on('end', () => {
-        try { fs.unlinkSync(tempBackup); } catch {}
+        try { fs.unlinkSync(tempBackup); } catch (e) { /* cleanup */ }
       });
       stream.on('error', () => {
-        try { fs.unlinkSync(tempBackup); } catch {}
-        res.status(500).json({ error: 'Gagal mendownload backup' });
+        try { fs.unlinkSync(tempBackup); } catch (e) { /* cleanup */ }
+        if (!res.headersSent) res.status(500).json({ error: 'Gagal mendownload backup' });
       });
     } catch (error) {
       res.status(500).json({ error: 'Gagal membuat backup: ' + error.message });
