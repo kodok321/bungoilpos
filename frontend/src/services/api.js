@@ -103,6 +103,28 @@ export const userAPI = {
 export const settingsAPI = {
   getAll: () => api.get('/settings'),
   update: (data) => api.put('/settings', data),
+  uploadLogo: (formData) => api.post('/settings/logo', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteLogo: () => api.delete('/settings/logo'),
+};
+
+export const exportImportAPI = {
+  exportProductsExcel: () => api.get('/export-import/products/excel', { responseType: 'blob' }),
+  exportProductsPdf: () => api.get('/export-import/products/pdf', { responseType: 'blob' }),
+  importProducts: (formData) => api.post('/export-import/products/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  exportCategoriesExcel: () => api.get('/export-import/categories/excel', { responseType: 'blob' }),
+  exportCategoriesPdf: () => api.get('/export-import/categories/pdf', { responseType: 'blob' }),
+  importCategories: (formData) => api.post('/export-import/categories/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  exportWorkOrdersExcel: (params) => api.get('/export-import/work-orders/excel', { params, responseType: 'blob' }),
+  exportWorkOrdersPdf: (params) => api.get('/export-import/work-orders/pdf', { params, responseType: 'blob' }),
+  importWorkOrders: (formData) => api.post('/export-import/work-orders/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  downloadTemplate: (type) => api.get(`/export-import/template/${type}`, { responseType: 'blob' }),
+};
+
+export const backupAPI = {
+  create: () => api.post('/backup'),
+  download: () => api.get('/backup/download', { responseType: 'blob' }),
+  list: () => api.get('/backup/list'),
+  delete: (filename) => api.delete(`/backup/${filename}`),
 };
 
 export default api;

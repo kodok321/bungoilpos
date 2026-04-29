@@ -29,14 +29,14 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
             <HiOutlineWrenchScrewdriver className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">POS Sparepart & Bengkel</h1>
-          <p className="text-gray-500 mt-1">Masuk ke sistem</p>
+          <h1 className="text-2xl font-bold text-gray-900">Bung Oil POS</h1>
+          <p className="text-gray-500 mt-1">Sparepart & Bengkel</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input
@@ -71,6 +71,8 @@ export default function Login() {
             <p>kasir / kasir123 | mekanik / mekanik123</p>
           </div>
         </form>
+
+        <p className="text-center text-xs text-gray-400 mt-4">Bung Oil POS v2.0 &bull; Professional Edition</p>
       </div>
     </div>
   );

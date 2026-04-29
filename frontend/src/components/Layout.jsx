@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { settingsAPI } from '../services/api';
 import {
   HiOutlineHome, HiOutlineShoppingCart, HiOutlineCube, HiOutlineWrenchScrewdriver,
   HiOutlineUsers, HiOutlineChartBar, HiOutlineCog6Tooth, HiOutlineArrowRightOnRectangle,
@@ -24,11 +25,22 @@ const menuItems = [
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [storeName, setStoreName] = useState('Bung Oil');
+  const [storeLogo, setStoreLogo] = useState(null);
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(user?.role));
+
+  useEffect(() => {
+    settingsAPI.getAll()
+      .then(({ data }) => {
+        if (data.store_name) setStoreName(data.store_name);
+        if (data.store_logo) setStoreLogo(`/uploads/${data.store_logo}`);
+      })
+      .catch(() => { /* ignore */ });
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -49,16 +61,20 @@ export default function Layout({ children }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <HiOutlineWrenchScrewdriver className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-gray-900">POS Sparepart</h1>
-                <p className="text-xs text-gray-500">& Bengkel</p>
+            <div className="flex items-center gap-2 min-w-0">
+              {storeLogo ? (
+                <img src={storeLogo} alt="Logo" className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
+              ) : (
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <HiOutlineWrenchScrewdriver className="w-5 h-5 text-white" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <h1 className="text-sm font-bold text-gray-900 truncate">{storeName}</h1>
+                <p className="text-xs text-gray-500">POS System</p>
               </div>
             </div>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded hover:bg-gray-100">
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded hover:bg-gray-100 flex-shrink-0">
               <HiOutlineXMark className="w-5 h-5" />
             </button>
           </div>
@@ -78,8 +94,8 @@ export default function Layout({ children }) {
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : ''}`} />
-                  {item.label}
+                  <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : ''}`} />
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -88,7 +104,7 @@ export default function Layout({ children }) {
           {/* User info */}
           <div className="border-t border-gray-200 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-sm font-semibold text-blue-700">
                   {user?.full_name?.charAt(0)?.toUpperCase()}
                 </span>
@@ -97,7 +113,7 @@ export default function Layout({ children }) {
                 <p className="text-sm font-medium text-gray-900 truncate">{user?.full_name}</p>
                 <p className="text-xs text-gray-500">{roleLabel[user?.role] || user?.role}</p>
               </div>
-              <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100" title="Logout">
+              <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100 flex-shrink-0" title="Logout">
                 <HiOutlineArrowRightOnRectangle className="w-5 h-5" />
               </button>
             </div>
@@ -106,13 +122,13 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top bar */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-4 lg:px-6">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100 flex-shrink-0">
             <HiOutlineBars3 className="w-5 h-5" />
           </button>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-gray-900 truncate">
             {filteredMenu.find(m => m.path === location.pathname)?.label || 'POS System'}
           </h2>
         </header>

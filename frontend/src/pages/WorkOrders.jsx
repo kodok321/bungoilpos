@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
-import { workOrderAPI, customerAPI, userAPI, productAPI } from '../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { workOrderAPI, customerAPI, userAPI, productAPI, exportImportAPI } from '../services/api';
 import { formatCurrency, formatDate, getStatusColor, getStatusLabel } from '../utils/format';
+import { downloadBlob } from '../utils/download';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { HiOutlinePlus, HiOutlineEye, HiOutlineWrenchScrewdriver } from 'react-icons/hi2';
+import {
+  HiOutlinePlus, HiOutlineWrenchScrewdriver, HiOutlineArrowDownTray,
+  HiOutlineArrowUpTray, HiOutlineDocumentText, HiOutlineTableCells
+} from 'react-icons/hi2';
 
 export default function WorkOrders() {
   const [workOrders, setWorkOrders] = useState([]);
@@ -14,7 +18,10 @@ export default function WorkOrders() {
   const [customers, setCustomers] = useState([]);
   const [mechanics, setMechanics] = useState([]);
   const [products, setProducts] = useState([]);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [importing, setImporting] = useState(false);
   const { hasRole } = useAuth();
+  const importRef = useRef(null);
 
   const [form, setForm] = useState({
     customer_id: '', mechanic_id: '', vehicle_type: '', vehicle_plate: '', vehicle_year: '',
@@ -99,10 +106,53 @@ export default function WorkOrders() {
 
   const statuses = ['', 'pending', 'in_progress', 'waiting_parts', 'completed', 'delivered', 'cancelled'];
 
+  const handleExportExcel = async () => {
+    try {
+      toast.loading('Mengexport Excel...', { id: 'export' });
+      const { data } = await exportImportAPI.exportWorkOrdersExcel({ status: statusFilter });
+      downloadBlob(data, `work-orders-${Date.now()}.xlsx`);
+      toast.success('Export Excel berhasil', { id: 'export' });
+    } catch { toast.error('Gagal export Excel', { id: 'export' }); }
+    setShowExportMenu(false);
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      toast.loading('Mengexport PDF...', { id: 'export' });
+      const { data } = await exportImportAPI.exportWorkOrdersPdf({ status: statusFilter });
+      downloadBlob(data, `work-orders-${Date.now()}.pdf`);
+      toast.success('Export PDF berhasil', { id: 'export' });
+    } catch { toast.error('Gagal export PDF', { id: 'export' }); }
+    setShowExportMenu(false);
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const { data } = await exportImportAPI.downloadTemplate('work-orders');
+      downloadBlob(data, 'template-work-orders.xlsx');
+      toast.success('Template berhasil didownload');
+    } catch { toast.error('Gagal download template'); }
+    setShowExportMenu(false);
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    setImporting(true);
+    try {
+      const { data } = await exportImportAPI.importWorkOrders(formData);
+      toast.success(data.message);
+      loadData();
+    } catch (err) { toast.error(err.response?.data?.error || 'Gagal import'); }
+    finally { setImporting(false); e.target.value = ''; }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex gap-1 flex-wrap">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-1">
           {statuses.map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 text-xs rounded-full font-medium ${statusFilter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
@@ -110,9 +160,38 @@ export default function WorkOrders() {
             </button>
           ))}
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary flex items-center gap-1">
-          <HiOutlinePlus className="w-4 h-4" /> Work Order Baru
-        </button>
+
+        <div className="flex flex-wrap gap-2 items-center">
+          <button onClick={() => { resetForm(); setShowModal(true); }} className="btn-primary flex items-center gap-1 text-sm">
+            <HiOutlinePlus className="w-4 h-4" /> <span className="hidden sm:inline">Work Order Baru</span><span className="sm:hidden">Baru</span>
+          </button>
+
+          <div className="relative">
+            <button onClick={() => setShowExportMenu(!showExportMenu)} className="btn-secondary flex items-center gap-1 text-sm">
+              <HiOutlineArrowDownTray className="w-4 h-4" /> Export
+            </button>
+            {showExportMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+                <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-lg border z-50 py-1 min-w-[180px]">
+                  <button onClick={handleExportExcel} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><HiOutlineTableCells className="w-4 h-4 text-green-600" /> Export Excel</button>
+                  <button onClick={handleExportPdf} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><HiOutlineDocumentText className="w-4 h-4 text-red-600" /> Export PDF</button>
+                  <hr className="my-1" />
+                  <button onClick={handleDownloadTemplate} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><HiOutlineArrowDownTray className="w-4 h-4 text-blue-600" /> Download Template</button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {hasRole('admin', 'owner') && (
+            <>
+              <button onClick={() => importRef.current?.click()} disabled={importing} className="btn-secondary flex items-center gap-1 text-sm">
+                <HiOutlineArrowUpTray className="w-4 h-4" /> {importing ? 'Importing...' : 'Import'}
+              </button>
+              <input ref={importRef} type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" />
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -121,11 +200,11 @@ export default function WorkOrders() {
         workOrders.map(wo => (
           <div key={wo.id} className="card hover:shadow-md transition-shadow cursor-pointer" onClick={() => loadDetail(wo.id)}>
             <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="font-bold text-blue-600">{wo.order_number}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-blue-600 truncate">{wo.order_number}</p>
                 <p className="text-sm text-gray-500">{formatDate(wo.created_at)}</p>
               </div>
-              <span className={`badge ${getStatusColor(wo.status)}`}>{getStatusLabel(wo.status)}</span>
+              <span className={`badge ${getStatusColor(wo.status)} flex-shrink-0 ml-2`}>{getStatusLabel(wo.status)}</span>
             </div>
             <div className="space-y-1 text-sm">
               <p><span className="text-gray-500">Pelanggan:</span> {wo.customer_name || '-'}</p>
@@ -196,7 +275,7 @@ export default function WorkOrders() {
               <span className={`badge text-sm ${getStatusColor(showDetail.status)}`}>{getStatusLabel(showDetail.status)}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
               <div><span className="text-gray-500">Pelanggan:</span> <span className="font-medium">{showDetail.customer_name || '-'}</span></div>
               <div><span className="text-gray-500">Mekanik:</span> <span className="font-medium">{showDetail.mechanic_name || '-'}</span></div>
               <div><span className="text-gray-500">Kendaraan:</span> <span className="font-medium">{showDetail.vehicle_type || '-'} {showDetail.vehicle_plate || ''}</span></div>
