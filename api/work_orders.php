@@ -166,11 +166,14 @@ switch ($action) {
         $pdo->beginTransaction();
         try {
             // Deduct stock for parts
-            $items = $pdo->prepare("SELECT * FROM work_order_items WHERE work_order_id = ?");
+            $items = $pdo->prepare("SELECT woi.*, p.name as product_name FROM work_order_items woi LEFT JOIN products p ON woi.product_id = p.id WHERE woi.work_order_id = ?");
             $items->execute([$id]);
             foreach ($items->fetchAll() as $item) {
-                $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?")
-                    ->execute([$item['quantity'], $item['product_id'], $item['quantity']]);
+                $stockStmt = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
+                $stockStmt->execute([$item['quantity'], $item['product_id'], $item['quantity']]);
+                if ($stockStmt->rowCount() === 0) {
+                    throw new Exception('Stok tidak mencukupi untuk: ' . ($item['product_name'] ?? $item['product_id']));
+                }
                 $pdo->prepare("INSERT INTO stock_movements (id, product_id, branch_id, movement_type, quantity, reference_type, reference_id, notes, user_id) VALUES (?, ?, ?, 'out', ?, 'work_order', ?, 'Work Order', ?)")
                     ->execute([generateId(), $item['product_id'], $user['branch_id'], $item['quantity'], $id, $user['id']]);
             }

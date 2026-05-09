@@ -33,19 +33,33 @@ function generateId() {
 function generateInvoiceNumber() {
     $pdo = getDB();
     $date = date('Ymd');
-    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM transactions WHERE DATE(created_at) = CURDATE()");
-    $stmt->execute();
-    $count = $stmt->fetch()['cnt'] + 1;
-    return 'INV-' . $date . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+    $maxRetries = 5;
+    for ($i = 0; $i < $maxRetries; $i++) {
+        $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM transactions WHERE DATE(created_at) = CURDATE()");
+        $stmt->execute();
+        $count = $stmt->fetch()['cnt'] + 1 + $i;
+        $number = 'INV-' . $date . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        $check = $pdo->prepare("SELECT id FROM transactions WHERE invoice_number = ?");
+        $check->execute([$number]);
+        if (!$check->fetch()) return $number;
+    }
+    return 'INV-' . $date . '-' . bin2hex(random_bytes(4));
 }
 
 function generateOrderNumber() {
     $pdo = getDB();
     $date = date('Ymd');
-    $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM work_orders WHERE DATE(created_at) = CURDATE()");
-    $stmt->execute();
-    $count = $stmt->fetch()['cnt'] + 1;
-    return 'WO-' . $date . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+    $maxRetries = 5;
+    for ($i = 0; $i < $maxRetries; $i++) {
+        $stmt = $pdo->prepare("SELECT COUNT(*) as cnt FROM work_orders WHERE DATE(created_at) = CURDATE()");
+        $stmt->execute();
+        $count = $stmt->fetch()['cnt'] + 1 + $i;
+        $number = 'WO-' . $date . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        $check = $pdo->prepare("SELECT id FROM work_orders WHERE order_number = ?");
+        $check->execute([$number]);
+        if (!$check->fetch()) return $number;
+    }
+    return 'WO-' . $date . '-' . bin2hex(random_bytes(4));
 }
 
 function jsonResponse($data, $code = 200) {
@@ -56,7 +70,7 @@ function jsonResponse($data, $code = 200) {
 }
 
 function getAuthUser() {
-    session_start();
+    if (session_status() === PHP_SESSION_NONE) { session_start(); }
     if (!isset($_SESSION['user_id'])) {
         jsonResponse(['error' => 'Unauthorized'], 401);
     }

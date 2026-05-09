@@ -96,9 +96,25 @@ switch ($action) {
             $invoiceNumber = generateInvoiceNumber();
             $subtotal = 0;
 
-            // First pass: validate all items and calculate subtotal
-            $processedItems = [];
+            // Aggregate items by product_id to handle duplicates
+            $aggregated = [];
             foreach ($body['items'] as $item) {
+                $pid = $item['product_id'];
+                if (isset($aggregated[$pid])) {
+                    $aggregated[$pid]['quantity'] += intval($item['quantity']);
+                    $aggregated[$pid]['discount'] += floatval($item['discount'] ?? 0);
+                } else {
+                    $aggregated[$pid] = [
+                        'product_id' => $pid,
+                        'quantity' => intval($item['quantity']),
+                        'discount' => floatval($item['discount'] ?? 0)
+                    ];
+                }
+            }
+
+            // Validate all items and calculate subtotal
+            $processedItems = [];
+            foreach ($aggregated as $item) {
                 $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? AND is_active = 1");
                 $stmt->execute([$item['product_id']]);
                 $product = $stmt->fetch();
@@ -107,7 +123,7 @@ switch ($action) {
 
                 $transType = $body['transaction_type'] ?? 'retail';
                 $unitPrice = $transType === 'wholesale' ? $product['wholesale_price'] : $product['retail_price'];
-                $itemDiscount = floatval($item['discount'] ?? 0);
+                $itemDiscount = floatval($item['discount']);
                 $itemSubtotal = ($unitPrice * $item['quantity']) - $itemDiscount;
                 $subtotal += $itemSubtotal;
 
@@ -195,6 +211,12 @@ switch ($action) {
             }
 
             $pdo->prepare("UPDATE transactions SET payment_status = 'cancelled' WHERE id = ?")->execute([$id]);
+
+            if (!empty($transaction['customer_id'])) {
+                $pdo->prepare("UPDATE customers SET total_purchases = GREATEST(0, total_purchases - ?) WHERE id = ?")
+                    ->execute([$transaction['total_amount'], $transaction['customer_id']]);
+            }
+
             $pdo->commit();
             jsonResponse(['message' => 'Transaksi berhasil dibatalkan']);
         } catch (Exception $e) {
