@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Protect sensitive directories
+RewriteRule ^config/ - [F,L]
+RewriteRule ^backups/ - [F,L]
+
+# Default index
+DirectoryIndex index.php

@@ -1,0 +1,18 @@
+# Uploads
+assets/uploads/*
+!assets/uploads/.gitkeep
+
+# Backups
+backups/*
+!backups/.gitkeep
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
